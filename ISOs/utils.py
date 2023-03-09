@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.optimize import fsolve
 # =============================================================================
 # constants
 # =============================================================================
-mu= 1.3271244e+20
+mu = 1.3271244e+20
 au = 149597870700.0
+
 
 def orb2cart(o, O, inc, e, a, E, G):
     # =============================================================================
@@ -29,21 +30,21 @@ def orb2cart(o, O, inc, e, a, E, G):
         f = np.mod(ecc2true(E, e), 2 * np.pi)  # true anomaly
         xt = -np.sqrt(-a * G) / r * np.sinh(E)  # minus sign to chose appropriate branch of hyperbola
         yt = np.sqrt(-a * G * (e ** 2 - 1)) / r * np.cosh(E)
-        
+
         E_dot = n / (e * np.cosh(E) - 1)
-        
+
         r_dot = a * e * n * np.sinh(E) / (1 - e * np.cosh(E))  # radijalna brzina
 
         # acceleration components in orbital coordinate system
         xt_dot = np.sqrt(G * a) * (r_dot * np.sin(E) - r * E_dot * np.cos(E)) / r ** 2
         yt_dot = -np.sqrt(G * a * (1 - e ** 2)) * (r * E_dot * np.sin(E) - r_dot * np.cos(E)) / r ** 2
-        
+
     elif e < 1:  # elliptic orbit
         r = a * (1 - e * np.cos(E))  # helicentric distance
         f = np.mod(ecc2true(E, e), 2 * np.pi)  # true anomaly
         xt = -np.sqrt(G * a) / r * np.sin(E)
         yt = np.sqrt(G * a * (1 - e ** 2)) / r * np.cos(E)
-        
+
         E_dot = n / (1 - e * np.cos(E))
         r_dot = a * e * n * np.sin(E) / (1 - e * np.cos(E))
 
@@ -51,12 +52,11 @@ def orb2cart(o, O, inc, e, a, E, G):
         xt_dot = np.sqrt(G * a) * (r_dot * np.sin(E) - r * E_dot * np.cos(E)) / r ** 2
         yt_dot = -np.sqrt(G * a * (1 - e ** 2)) * (r * E_dot * np.sin(E) - r_dot * np.cos(E)) / r ** 2
 
-
     # cartesian coordinates
     x = r * (np.cos(O) * np.cos(o + f) - np.sin(O) * np.cos(inc) * np.sin(o + f))
     y = r * (np.sin(O) * np.cos(o + f) + np.cos(O) * np.cos(inc) * np.sin(o + f))
     z = r * (np.sin(inc) * np.sin(o + f))
-    
+
     # cartesian components (ecliptical coordinate system)
     vx = xt * (np.cos(o) * np.cos(O) - np.sin(o) * np.cos(inc) * np.sin(O)) \
          - yt * (np.sin(o) * np.cos(O) + np.cos(o) * np.cos(inc) * np.sin(O))
@@ -65,9 +65,8 @@ def orb2cart(o, O, inc, e, a, E, G):
          - yt * (np.sin(o) * np.sin(O) - np.cos(o) * np.cos(inc) * np.cos(O))
 
     vz = xt * np.sin(o) * np.sin(inc) + yt * np.cos(o) * np.sin(inc)
-    
-    
-        # cartesian components (ecliptical coordinate system)
+
+    # cartesian components (ecliptical coordinate system)
     ax = xt_dot * (np.cos(o) * np.cos(O) - np.sin(o) * np.cos(inc) * np.sin(O)) \
          - yt_dot * (np.sin(o) * np.cos(O) + np.cos(o) * np.cos(inc) * np.sin(O))
 
@@ -75,7 +74,6 @@ def orb2cart(o, O, inc, e, a, E, G):
          - yt_dot * (np.sin(o) * np.sin(O) - np.cos(o) * np.cos(inc) * np.cos(O))
 
     az = xt_dot * np.sin(o) * np.sin(inc) + yt_dot * np.cos(o) * np.sin(inc)
-    
 
     return x, y, z, vx, vy, vz, ax, ay, az
 
@@ -111,13 +109,13 @@ def cart2orb(x, y, z, vx, vy, vz, G):
 
     # prava anomalija
     nu = np.arccos(np.linalg.linalg.dot(e, r) / np.linalg.norm(e) / np.linalg.norm(r))
-    
+
     print(np.linalg.linalg.dot(r, v))
 
-    if np.linalg.linalg.dot(r, v) < 0 and np.linalg.norm(e)<1.:
+    if np.linalg.linalg.dot(r, v) < 0 and np.linalg.norm(e) < 1.:
         nu = 2 * np.pi - nu
-    elif np.linalg.linalg.dot(r, v) < 0 and np.linalg.norm(e)>1.:
-        nu=-nu
+    elif np.linalg.linalg.dot(r, v) < 0 and np.linalg.norm(e) > 1.:
+        nu = -nu
 
     # nagib
     ink = np.arccos(h[2] / np.linalg.norm(h))
@@ -139,10 +137,10 @@ def cart2orb(x, y, z, vx, vy, vz, G):
     E = true2ecc(nu, e)
 
     # srednja anomalija
-#    if e < 1:
-#        M = E - e * np.sin(E)
-#    else:
-#        M = e * np.sinh(E) - E
+    #    if e < 1:
+    #        M = E - e * np.sin(E)
+    #    else:
+    #        M = e * np.sinh(E) - E
 
     # poluosa
     a = 1 / (2 / np.linalg.norm(r) - np.linalg.norm(v) ** 2 / G)
@@ -174,14 +172,13 @@ def earth(MJD):
     inc = 0.
     e = 0.01671022;
     a = 149597870700.0
-    
-    
+
     # Gravitational parameter of the Sun
     G = 1.3271244e+20
 
     # Earth mean motion
     n = 1.9909836745e-07
-    
+
     # mean anomaly
     M = (MJD - 51545) * 0.01720209895 - 0.239869  # MJD=51545, M=-0.239869 za J2000.0
 
@@ -192,14 +189,14 @@ def earth(MJD):
     # helicentric distance
     r = a * (1 - e * np.cos(E))
     r_dot = a * e * n * np.sin(E) / (1 - e * np.cos(E))
-    
+
     # true anomaly
     f = np.mod(ecc2true(E, e), 2 * np.pi)  # true anomaly
 
     # velocity components in orbital coordinate system
     xt = -np.sqrt(G * a) / r * np.sin(E)
     yt = np.sqrt(G * a * (1 - e ** 2)) / r * np.cos(E)
-    
+
     # acceleration components in orbital coordinate system
     xt_dot = np.sqrt(G * a) * (r_dot * np.sin(E) - r * E_dot * np.cos(E)) / r ** 2
     yt_dot = -np.sqrt(G * a * (1 - e ** 2)) * (r * E_dot * np.sin(E) - r_dot * np.cos(E)) / r ** 2
@@ -217,13 +214,12 @@ def earth(MJD):
          - yt * (np.sin(o) * np.sin(O) - np.cos(o) * np.cos(inc) * np.cos(O))
 
     vz = xt * np.sin(o) * np.sin(inc) + yt * np.cos(o) * np.sin(inc)
-    
-    
+
     accx = xt_dot * (np.cos(o) * np.cos(O) - np.sin(o) * np.cos(inc) * np.sin(O)) \
-         - yt_dot * (np.sin(o) * np.cos(O) + np.cos(o) * np.cos(inc) * np.sin(O))
+           - yt_dot * (np.sin(o) * np.cos(O) + np.cos(o) * np.cos(inc) * np.sin(O))
 
     accy = xt_dot * (np.cos(o) * np.sin(O) + np.sin(o) * np.cos(inc) * np.cos(O)) \
-         - yt_dot * (np.sin(o) * np.sin(O) - np.cos(o) * np.cos(inc) * np.cos(O))
+           - yt_dot * (np.sin(o) * np.sin(O) - np.cos(o) * np.cos(inc) * np.cos(O))
 
     accz = xt_dot * np.sin(o) * np.sin(inc) + yt_dot * np.cos(o) * np.sin(inc)
 
@@ -267,6 +263,7 @@ def geocentric_coor(o, O, inc, e, a, E, MJD):
 
     return x, y, z, vx, vy, vz, accx, accy, accz
 
+
 # =============================================================================
 #                       SPHERICAL COORDINATE SYSTEM
 # =============================================================================
@@ -284,8 +281,6 @@ def spherical_coor(x, y, z):
 
     # converts to degrees
     return long, lat
-
-
 
 
 def spherical_vel(long, lat, r, vx, vy, vz):
@@ -324,7 +319,6 @@ def spherical_acc(long, lat, r, long_dot, lat_dot, vx, vy, vz, ax, ay, az):
     # Output:
     # long_d_dot, lat_d_dot [degrees/day**2] - spherical accelerations
     # =============================================================================
-
 
     # projections of velocity vector
     v_long = -np.sin(long) * vx + np.cos(long) * vy
@@ -383,43 +377,96 @@ def phase_angle(R, rhc, rgc):
     return np.rad2deg(np.arccos((rgc ** 2 + rhc ** 2 - R ** 2) / 2 / rgc / rhc))
 
 
-def absolute_magnitude(D, a):
+def absolute_magnitude_asteroid(D, albedo):
     # =============================================================================
     # Calculates absolute magnitude according to Harris, Alan W.; Harris, Alan W.(1997)
     # input:
     # D [m]- diameter
-    # a - geometrical albedo
+    # albedo - geometrical albedo
     # Output:
     # absolute magnitude
     # =============================================================================
-    return 15.618 - 2.5 * np.log10(a) - 5 * np.log10(D / 1000)
+    return 15.618 - 2.5 * np.log10(albedo) - 5 * np.log10(D / 1000)
 
 
-def apparent_magnitude(H, r_gc, r_hc, phase, G):
+def apparent_magnitude_asteroid(D, albedo, G, r_gc, r_hc, phase):
     # =============================================================================
     # Calculates apparent magnitude (Jewit et al (2017), Bowell et al(1989))
     # Input:
-    # H - absolute magnitude
+    # D (m) - diameter
+    # albedo - geometrical albedo
     # r_gc [au] - geocentric distance
     # r_hc [au]- heliocentric distance
-    # f [radians]- phase angle
+    # phase [radians]- phase angle
+    # G - slope parameter
     # Output:
-    # Apparent visual magnitude of the asteroid
+    # Apparent visual magnitude of an asteroid
     # =============================================================================
-    
-    A=np.zeros(2)
-    B=np.zeros(2)
+    A = np.zeros(2)
+    B = np.zeros(2)
     A[0] = 3.33
     A[1] = 1.87
     B[0] = 0.63
     B[1] = 1.22
 
-    phi = np.exp(-A*np.power(np.tan(0.5*phase),B))
-    phase_function = 2.5*np.log10((1-G)*phi[0] + G*phi[1])
-    
-    return H + 5*np.log10(r_gc) + 5*np.log10(r_hc) - phase_function
+    phi = np.exp(-A * np.power(np.tan(0.5 * phase), B))
+    phase_function = 2.5 * np.log10((1 - G) * phi[0] + G * phi[1])
 
-def max_hc_distance(D, albedo, m_cut):
+    H = absolute_magnitude_asteroid(D, albedo)
+    return H + 5 * np.log10(r_gc) + 5 * np.log10(r_hc) - phase_function
+
+
+def absolute_magnitude_comet(D, b1, b2):
+    # =============================================================================
+    # Calculates absolute magnitude of a comet according to Cook et al, 2016 (Eq.4)
+    # input:
+    # D (m))- diameter
+    # b1, b2 - empirical parameters
+    # Output:
+    # absolute magnitude
+    # =============================================================================
+    return (np.log10(D/1000)-b2)/b1
+
+
+def apparent_magnitude_comet(D, b1, b2, n, G, r_gc, r_hc, phase):
+    # =============================================================================
+    # Calculates apparent magnitude of a comet according to of a comet according to Cook et al, 2016 (Eq.5)
+    # Input:
+    # D (m) - diameter
+    # b1, b2 - empirical parameters
+    # n - brightening factor due to activity
+    # G - slope parameter
+    # r_gc (au) - geocentric distance
+    # r_hc (au) - heliocentric distance
+    # phase (radians) - phase angle
+    # Output:
+    # Apparent visual magnitude of a comet
+    # =============================================================================
+    A = np.zeros(2)
+    B = np.zeros(2)
+    A[0] = 3.33
+    A[1] = 1.87
+    B[0] = 0.63
+    B[1] = 1.22
+
+    phi = np.exp(-A * np.power(np.tan(0.5 * phase), B))
+    phase_function = 2.5 * np.log10((1 - G) * phi[0] + G * phi[1])
+
+    # reference asteroid from which comet cannot be fainter
+    V_ast = apparent_magnitude_asteroid(D, 0.06, G, r_gc, r_hc, phase)
+
+    # comet
+    Hc = absolute_magnitude_comet(D, b1, b2)
+
+    V = Hc + 2.5 * (n / 2 * np.log10(r_hc ** 2) + np.log10(r_gc ** 2)) - phase_function
+
+    return np.min(V_ast, V)
+
+
+
+
+
+def max_hc_distance_asteoid(D, albedo, V_cut):
     # =============================================================================
     # Calculates maximum heliocentric distance where the object can be observed
     # Input:
@@ -429,9 +476,32 @@ def max_hc_distance(D, albedo, m_cut):
     # output:
     # max heliocentric distance where the object can be observed
     # =============================================================================
-    H=absolute_magnitude(D, albedo)
-    C=10**((m_cut-H)/5)
-    return (-1+np.sqrt(1+4*C))/2
+    H = absolute_magnitude_asteroid(D, albedo)
+    C = 10 ** ((V_cut - H) / 5)
+    return (1 + np.sqrt(1 + 4 * C)) / 2
+
+
+def max_hc_distance_comet(D, b1, b2, n, V_cut):
+    # =============================================================================
+    # Calculates maximum heliocentric distance where the object can be observed
+    # Input:
+    # m_cut:minimum apparent magnitude
+    # D: diameter (m)
+    # albedo
+    # output:
+    # max heliocentric distance where the object can be observed
+    # =============================================================================
+    Hc = absolute_magnitude_comet(D, b1, b2)
+
+    def func(x, *data):
+        nn, CC = data
+        return x ** (nn + 2) - 2 * x ** (n + 1) + x ** n - CC
+
+    C = 10 ** (2 * (V_cut - Hc) / 5)
+
+    distance = fsolve(func, np.array([10]), args=(n, C))[0]
+
+    return distance
 
 
 # =============================================================================
@@ -521,33 +591,30 @@ def ecl2eq_cart(x, y, z):
     # =============================================================================
 
     eps = 0.409093  # ecliptic obliquity
-    
-    return(x, y*np.cos(eps)-z*np.sin(eps), y*np.sin(eps)+z*np.cos(eps))
+
+    return (x, y * np.cos(eps) - z * np.sin(eps), y * np.sin(eps) + z * np.cos(eps))
 
 
 # equatorial to ecliptic
 
 def eq2ecl_spherical(alpha, delta):
-    
     eps = 0.409093  # ecliptic obliquity
-    
-    lat=np.arcsin(np.sin(delta)*np.cos(eps)-np.cos(delta)*np.sin(eps)*np.sin(alpha))
-    
-    sinus=(np.sin(delta)*np.sin(eps)+np.cos(delta)*np.cos(eps)*np.sin(alpha))/np.cos(lat)
-    
-    cosinus=np.cos(delta)*np.cos(alpha)/np.cos(lat)
-    
-    long=np.arctan2(sinus, cosinus)
-    
-    return(long, lat)
-    
-    
-def eq2ecl_cart(x,y,z):
-    
+
+    lat = np.arcsin(np.sin(delta) * np.cos(eps) - np.cos(delta) * np.sin(eps) * np.sin(alpha))
+
+    sinus = (np.sin(delta) * np.sin(eps) + np.cos(delta) * np.cos(eps) * np.sin(alpha)) / np.cos(lat)
+
+    cosinus = np.cos(delta) * np.cos(alpha) / np.cos(lat)
+
+    long = np.arctan2(sinus, cosinus)
+
+    return (long, lat)
+
+
+def eq2ecl_cart(x, y, z):
     eps = 0.409093  # ecliptic obliquity
-    
-    return(x, y*np.cos(eps)+z*np.sin(eps), -y*np.sin(eps)+z*np.cos(eps))
-    
+
+    return (x, y * np.cos(eps) + z * np.sin(eps), -y * np.sin(eps) + z * np.cos(eps))
 
 
 # ecliptic to galactic
@@ -579,11 +646,11 @@ def ecl2gal_cart(x, y, z):
     # Output:
     # l, b [degrees] - galactic longitude, galactic latitude
     # =============================================================================
-    
-    r=(x**2+y**2+z**2)**(1/2)
-    long=np.arctan2(y,x)
-    lat=np.arctan(z/(x**2+y**2)**(1/2))
-    
+
+    r = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
+    long = np.arctan2(y, x)
+    lat = np.arctan(z / (x ** 2 + y ** 2) ** (1 / 2))
+
     lg = 3.14177
     bg = 0.52011
     bk = 1.68302
@@ -593,7 +660,8 @@ def ecl2gal_cart(x, y, z):
     kosinus = (np.cos(bg) * np.sin(lat) - np.sin(bg) * np.cos(lat) * np.cos(long - lg)) / np.cos(b)
     l = bk - np.arctan2(sinus, kosinus)
 
-    return r*np.cos(l)*np.cos(b), r*np.sin(l)*np.cos(b), r*np.sin(b)
+    return r * np.cos(l) * np.cos(b), r * np.sin(l) * np.cos(b), r * np.sin(b)
+
 
 # galactic to ecliptic
 def gal2ecl_spherical(l, b):
@@ -608,9 +676,9 @@ def gal2ecl_spherical(l, b):
     bg = 0.52011
     bk = 1.68302
 
-    lat = np.arcsin(np.sin(bg) * np.sin(b) + np.cos(bg) * np.cos(b) * np.cos(bk-l))
-    sinus = np.cos(b) * np.sin(bk-l) / np.cos(lat)
-    kosinus = (np.cos(bg) * np.sin(b) - np.sin(bg) * np.cos(b) * np.cos(bk-l)) / np.cos(lat)
+    lat = np.arcsin(np.sin(bg) * np.sin(b) + np.cos(bg) * np.cos(b) * np.cos(bk - l))
+    sinus = np.cos(b) * np.sin(bk - l) / np.cos(lat)
+    kosinus = (np.cos(bg) * np.sin(b) - np.sin(bg) * np.cos(b) * np.cos(bk - l)) / np.cos(lat)
     long = lg + np.arctan2(sinus, kosinus)
 
     return long, lat
@@ -624,40 +692,43 @@ def gal2ecl_cart(x, y, z):
     # Output:
     # l, b [degrees] - galactic longitude, galactic latitude
     # =============================================================================
-    
-    r=(x**2+y**2+z**2)**(1/2)
-    l=np.arctan2(y,x)
-    b=np.arctan(z/(x**2+y**2)**(1/2))
-    
+
+    r = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
+    l = np.arctan2(y, x)
+    b = np.arctan(z / (x ** 2 + y ** 2) ** (1 / 2))
+
     lg = 3.14177
     bg = 0.52011
     bk = 1.68302
 
-    lat = np.arcsin(np.sin(bg) * np.sin(b) + np.cos(bg) * np.cos(b) * np.cos(bk-l))
-    sinus = np.cos(b) * np.sin(bk-l) / np.cos(lat)
-    kosinus = (np.cos(bg) * np.sin(b) - np.sin(bg) * np.cos(b) * np.cos(bk-l)) / np.cos(lat)
+    lat = np.arcsin(np.sin(bg) * np.sin(b) + np.cos(bg) * np.cos(b) * np.cos(bk - l))
+    sinus = np.cos(b) * np.sin(bk - l) / np.cos(lat)
+    kosinus = (np.cos(bg) * np.sin(b) - np.sin(bg) * np.cos(b) * np.cos(bk - l)) / np.cos(lat)
     long = lg + np.arctan2(sinus, kosinus)
 
-    return r*np.cos(long)*np.cos(lat), r*np.sin(long)*np.cos(lat), r*np.sin(lat)
+    return r * np.cos(long) * np.cos(lat), r * np.sin(long) * np.cos(lat), r * np.sin(lat)
+
 
 # galactic to equatorial
-def gal2eq_spherical(l, b):  
-    long, lat= gal2ecl_spherical(l, b)
-    return(ecl2eq_spherical(long, lat))
-    
-def gal2eq_cart(x, y, z): 
+def gal2eq_spherical(l, b):
+    long, lat = gal2ecl_spherical(l, b)
+    return (ecl2eq_spherical(long, lat))
+
+
+def gal2eq_cart(x, y, z):
     xe, ye, ze = gal2ecl_cart(x, y, z)
-    return(ecl2eq_cart(xe, ye, ze ))
+    return (ecl2eq_cart(xe, ye, ze))
+
 
 # equatorial to galactic
-def eq2gal_spherical(alpha, delta): 
+def eq2gal_spherical(alpha, delta):
     long, lat = eq2ecl_spherical(alpha, delta)
-    return(ecl2gal_spherical(long, lat))
-    
+    return (ecl2gal_spherical(long, lat))
+
+
 def eq2gal_cart(x, y, z):
     xe, ye, ze = eq2ecl_cart(x, y, z)
-    return(ecl2gal_cart(xe, ye, ze))
-
+    return (ecl2gal_cart(xe, ye, ze))
 
 
 def ecc2true(E, e):
@@ -684,10 +755,11 @@ def true2ecc(f, e):
     # =============================================================================
     if e > 1:
         return 2 * np.arctanh(np.sqrt((e - 1) / (e + 1)) * np.tan(f / 2))
-        
+
     else:
         return np.arctan2(np.sqrt(1 - e ** 2) * np.sin(f), e + np.cos(f))
-    
+
+
 def ecc2mean(E, e):
     # =============================================================================
     # converts eccentric anomaly to mean anomaly
@@ -697,10 +769,11 @@ def ecc2mean(E, e):
     # Mean anomaly [radians]
     # =============================================================================
     if e > 1:
-        return e*np.sinh(E)-E
+        return e * np.sinh(E) - E
     else:
-        return E-e*np.sin(E)
-    
+        return E - e * np.sin(E)
+
+
 def mean2tp(M, a, epoch):
     # =============================================================================
     # converts mean anomaly to perihelion passage
@@ -711,8 +784,8 @@ def mean2tp(M, a, epoch):
     # Output:
     # perihelion passage (MJD)
     # =============================================================================
-    mean_motion=np.sqrt(mu/np.abs(a*au)**3)
-    return epoch-(M/mean_motion)/86400
+    mean_motion = np.sqrt(mu / np.abs(a * au) ** 3)
+    return epoch - (M / mean_motion) / 86400
 
 
 def mean_anomaly(M0, epoch0, a, epoch, G):
@@ -905,4 +978,3 @@ def mean_distance(b, n):
 
     # mean minimum distance
     return np.sqrt(S / broj_pojasevi) / 2
-
