@@ -76,7 +76,8 @@ install_requires = [
     "spiceypy",
     "numpy",
     "pandas",
-    "matplotlib"
+    "matplotlib",
+
 ]
 extras_require = {
     'dev': [

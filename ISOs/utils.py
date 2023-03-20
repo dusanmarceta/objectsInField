@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+from traitlets import This
+
 # =============================================================================
 # constants
 # =============================================================================
@@ -495,13 +497,17 @@ def max_hc_distance_comet(D, b1, b2, n, V_cut):
 
     def func(x, *data):
         nn, CC = data
-        return x ** (nn + 2) - 2 * x ** (n + 1) + x ** n - CC
+        return x ** (nn + 2) - 2 * x ** (n + 1) + x ** n - CC # this follows from eq.5 from Cook, 2016
 
     C = 10 ** (2 * (V_cut - Hc) / 5)
 
-    distance = fsolve(func, np.array([10]), args=(n, C))[0]
 
-    return distance
+    r_initial=max_hc_distance_asteoid(D, 1, V_cut) # initial try to solve the above equation
+    # This is chosen for analog asteroid
+
+    distance = fsolve(func, np.array([r_initial]), args=(n, C))[0]
+
+    return np.max([r_initial, distance]) # greater distance for a comet and analog asteroid
 
 
 # =============================================================================
