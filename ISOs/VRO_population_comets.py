@@ -81,7 +81,10 @@ for population in range(1):  # for 3 populations
             number_of_runs = int(np.ceil(ISO_total_number / maximum_array_size))
 
         for run in range(number_of_runs):
-            print('\n ------------------------------ \n Run number {} out of {} for SFD={}, population {}.'.format(
+            np.savetxt('progress_comets.txt', ['Run number {} out of {} for SFD={}, population {}.'.format(
+                run + 1, number_of_runs,
+                alpha[0], population)], fmt='%s')
+            print('\n ------------------------------ \n [Run number {} out of {} for SFD={}, population {}.'.format(
                 run + 1, number_of_runs,
                 alpha[0], population))
 
