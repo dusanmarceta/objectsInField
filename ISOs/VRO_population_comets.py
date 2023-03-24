@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from synthetic_population import synthetic_population, total_number
-from utils import true2ecc, ecc2mean, mean2tp, absolute_magnitude_asteroid, moid, max_hc_distance_asteroid, year2sec
+from utils import true2ecc, ecc2mean, mean2tp, absolute_magnitude_comet, moid, max_hc_distance_comet, year2sec
 from tqdm import tqdm
 
 au = 149597870700.0
@@ -16,9 +16,12 @@ v_max = 1e5
 d = [50, 1000]
 alpha = [[-2], [-2.5], [-3]]
 
+
 V_cut = 24.5
 
-albedo = 1
+b1 = -0.2
+b2 = 3.1236
+n = 2  # brightening due to activity
 
 u_Sun = 1e4
 v_Sun = 1.1e4
@@ -49,7 +52,7 @@ for population in range(1):  # for 3 populations
     # =============================================================================
     for alpha in alpha:  # SFD
 
-        output_file = stars + '_' + str(min(d)) + '_' + str(max(d)) + '_' + str(alpha[0]) + '_asteroids.ssm'
+        output_file = stars + '_' + str(min(d)) + '_' + str(max(d)) + '_' + str(alpha[0]) + '_comets.ssm'
 
         q_out = np.array([])
         e_out = np.array([])
@@ -63,7 +66,7 @@ for population in range(1):  # for 3 populations
         if os.path.exists(output_file):
             os.remove(output_file)
 
-        hc_max = max_hc_distance_asteroid(max(d), albedo, V_cut)
+        hc_max = max_hc_distance_comet(max(d), b1, b2, n, V_cut)
 
         rm = hc_max + year2sec(time_of_simulation) * v_max / au
 
@@ -98,7 +101,7 @@ for population in range(1):  # for 3 populations
 
             hc_max1 = np.zeros(len(D))
             for i in range(len(D)):
-                hc_max1[i] = max_hc_distance_asteroid(D[i], albedo, V_cut)
+                hc_max1[i] = max_hc_distance_comet(D[i], b1, b2, n, V_cut)
 
             selection = q < hc_max1
             e1 = e[selection]
@@ -110,15 +113,15 @@ for population in range(1):  # for 3 populations
             q1 = q[selection]
             hc_max2 = hc_max1[selection]
 
-            Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1)))  # OK
+            Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1))) #OK
 
             # corresponding critical mean anomaly
-            M_max = e1 * np.sinh(Ecr) - Ecr  # OK
+            M_max = e1 * np.sinh(Ecr) - Ecr # OK
 
             M = np.zeros(len(q1))  # current mean anomaly
             for i in range(len(q1)):
-                E = true2ecc(f1[i], e1[i])  # OK
-                M[i] = ecc2mean(E, e1[i])  # OK
+                E = true2ecc(f1[i], e1[i]) #OK
+                M[i] = ecc2mean(E, e1[i]) #OK
 
             n = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion
             M_min = -M_max - n * year2sec(time_of_simulation)
@@ -153,7 +156,7 @@ for population in range(1):  # for 3 populations
         for i in tqdm(range(len(q_out))):
             ISO_name = 'ISO_' + str(i)
             tp = mean2tp(ecc2mean(true2ecc(f_out[i], e_out[i]), e_out[i]), q_out[i] / (1 - e_out[i]), 59200.0)
-            H = absolute_magnitude_asteroid(D_out[i], albedo)
+            H = absolute_magnitude_comet(D_out[i], b1, b2)
             iso_moid = moid(1.99330267, -0.1965350, 0, 0.01671022, 1., omega_out[i], Omega_out[i], inc_out[i], e_out[i],
                             q_out[i] / (1 - e_out[i]), np.deg2rad(1.))
 

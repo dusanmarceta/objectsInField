@@ -7,7 +7,7 @@ import random
 
 # constants
 au=1.495978707e11 # astronomical unit
-mu=1.32712440042e20  # standard gravitional parameter of the Sun
+mu=1.32712440042e20  # standard gravitational parameter of the Sun
 
 def p_vx_vy_vz(vx, sigma_vx, mu_x, vy, sigma_vy, mu_y, vz, sigma_vz, mu_z, vd, va):
     """Generates samples of rectangular components of interstellar velocity vector in galactic coordinate frame"""

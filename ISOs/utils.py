@@ -468,7 +468,7 @@ def apparent_magnitude_comet(D, b1, b2, n, G, r_gc, r_hc, phase):
 
 
 
-def max_hc_distance_asteoid(D, albedo, V_cut):
+def max_hc_distance_asteroid(D, albedo, V_cut):
     # =============================================================================
     # Calculates maximum heliocentric distance where the object can be observed
     # Input:
@@ -502,7 +502,7 @@ def max_hc_distance_comet(D, b1, b2, n, V_cut):
     C = 10 ** (2 * (V_cut - Hc) / 5)
 
 
-    r_initial=max_hc_distance_asteoid(D, 1, V_cut) # initial try to solve the above equation
+    r_initial=max_hc_distance_asteroid(D, 1, V_cut) # initial try to solve the above equation
     # This is chosen for analog asteroid
 
     distance = fsolve(func, np.array([r_initial]), args=(n, C))[0]
@@ -881,7 +881,8 @@ def orbit_plot(o, O, i, e, a, rmax, plane, nodes, apse, color, ax):
         duzina = min(np.abs(rmax / np.cos(O)), np.abs(rmax / np.sin(O)))
         ax.plot([duzina * np.cos(O), -duzina * np.cos(O)], [duzina * np.sin(O), -duzina * np.sin(O)], [0, 0], 'k')
 
-
+def year2sec(x):
+    return x*31557600.0
 # =============================================================================
 #                                   OTHER
 # =============================================================================
