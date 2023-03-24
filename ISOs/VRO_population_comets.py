@@ -2,7 +2,6 @@ import os
 import numpy as np
 from synthetic_population import synthetic_population, total_number
 from utils import true2ecc, ecc2mean, mean2tp, absolute_magnitude_comet, moid, max_hc_distance_comet, year2sec
-from tqdm import tqdm
 
 au = 149597870700.0
 mu = 1.32712440042e20  # standard gravitational parameter of the Sun
@@ -153,7 +152,7 @@ for population in range(1):  # for 3 populations
         # first line
         np.savetxt(file, ['!!OID FORMAT q e i node argperi t_p H t_0 INDEX N_PAR MOID COMPCODE'], fmt='%s')
 
-        for i in tqdm(range(len(q_out))):
+        for i in range(len(q_out)):
             ISO_name = 'ISO_' + str(i)
             tp = mean2tp(ecc2mean(true2ecc(f_out[i], e_out[i]), e_out[i]), q_out[i] / (1 - e_out[i]), 59200.0)
             H = absolute_magnitude_comet(D_out[i], b1, b2)

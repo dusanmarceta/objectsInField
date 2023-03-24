@@ -150,7 +150,7 @@ for population in range(1):  # for 3 populations
         # first line
         np.savetxt(file, ['!!OID FORMAT q e i node argperi t_p H t_0 INDEX N_PAR MOID COMPCODE'], fmt='%s')
 
-        for i in tqdm(range(len(q_out))):
+        for i in range(len(q_out)):
             ISO_name = 'ISO_' + str(i)
             tp = mean2tp(ecc2mean(true2ecc(f_out[i], e_out[i]), e_out[i]), q_out[i] / (1 - e_out[i]), 59200.0)
             H = absolute_magnitude_asteroid(D_out[i], albedo)

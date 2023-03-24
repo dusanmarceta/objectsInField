@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import interpolate
 from scipy.integrate import simps, cumtrapz
-from tqdm import tqdm
 from scipy.stats import multivariate_normal
 import random
 
@@ -495,7 +494,7 @@ def synthetic_population(rm, n0, v_min, v_max,
 # =============================================================================
 
         # orthogonal base (uu, vv) in a plane normal to interstellar velocity vector
-        for i in range(total_number)):
+        for i in range(total_number):
             xx=np.cos(bs[i])*np.cos(ls[i])
             yy=np.cos(bs[i])*np.sin(ls[i])
             zz=np.sin(bs[i])
