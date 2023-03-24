@@ -269,7 +269,7 @@ def synthetic_population(rm, n0, v_min, v_max,
         new_sizes=[size]
 
     p_r=np.zeros(len(r_arr))
-    for i in range(len(new_sizes):
+    for i in range(len(new_sizes)):
 
         # p6 marginal with respect to B and phi
         p_rvlb=np.zeros([new_sizes[i], np.shape(v)[0], np.shape(v)[1], np.shape(v)[2]])
