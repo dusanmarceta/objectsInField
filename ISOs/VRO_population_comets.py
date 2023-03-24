@@ -122,8 +122,8 @@ for population in range(1):  # for 3 populations
                 E = true2ecc(f1[i], e1[i]) #OK
                 M[i] = ecc2mean(E, e1[i]) #OK
 
-            n = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion
-            M_min = -M_max - n * year2sec(time_of_simulation)
+            mm = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion
+            M_min = -M_max - mm * year2sec(time_of_simulation)
 
             # Taking only those which are currently observable
             # or a bit behind the observable zone but can reach it during
