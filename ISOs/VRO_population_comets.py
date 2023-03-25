@@ -106,7 +106,7 @@ for population in range(1):  # for 3 populations
             for i in range(len(D)):
                 hc_max_comet = max_hc_distance_comet(D[i], b1, b2, n, V_cut)
                 hc_max_asteroid = max_hc_distance_asteroid(D[i], 1., V_cut)
-                hc_max[i] = np.max([hc_max_comet, hc_max_asteroid])
+                hc_max1[i] = np.max([hc_max_comet, hc_max_asteroid])
 
             selection = q < hc_max1
             e1 = e[selection]
