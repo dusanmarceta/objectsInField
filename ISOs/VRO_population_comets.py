@@ -1,7 +1,8 @@
 import os
 import numpy as np
 from synthetic_population import synthetic_population, total_number
-from utils import true2ecc, ecc2mean, mean2tp, absolute_magnitude_comet, moid, max_hc_distance_comet, year2sec
+from utils import true2ecc, ecc2mean, mean2tp, absolute_magnitude_comet, moid, max_hc_distance_comet, year2sec, \
+    max_hc_distance_asteroid
 
 au = 149597870700.0
 mu = 1.32712440042e20  # standard gravitational parameter of the Sun
@@ -15,12 +16,11 @@ v_max = 1e5
 d = [50, 1000]
 alpha = [[-2], [-2.5], [-3]]
 
-
 V_cut = 24.5
 
 b1 = -0.2
 b2 = 3.1236
-n = 2  # brightening due to activity
+n = 5  # brightening due to activity
 
 u_Sun = 1e4
 v_Sun = 1.1e4
@@ -102,8 +102,11 @@ for population in range(1):  # for 3 populations
             # =============================================================================
 
             hc_max1 = np.zeros(len(D))
+
             for i in range(len(D)):
-                hc_max1[i] = max_hc_distance_comet(D[i], b1, b2, n, V_cut)
+                hc_max_comet = max_hc_distance_comet(D[i], b1, b2, n, V_cut)
+                hc_max_asteroid = max_hc_distance_asteroid(D[i], 1., V_cut)
+                hc_max[i] = np.max([hc_max_comet, hc_max_asteroid])
 
             selection = q < hc_max1
             e1 = e[selection]
@@ -115,15 +118,15 @@ for population in range(1):  # for 3 populations
             q1 = q[selection]
             hc_max2 = hc_max1[selection]
 
-            Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1))) #OK
+            Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1)))  # OK
 
             # corresponding critical mean anomaly
-            M_max = e1 * np.sinh(Ecr) - Ecr # OK
+            M_max = e1 * np.sinh(Ecr) - Ecr  # OK
 
             M = np.zeros(len(q1))  # current mean anomaly
             for i in range(len(q1)):
-                E = true2ecc(f1[i], e1[i]) #OK
-                M[i] = ecc2mean(E, e1[i]) #OK
+                E = true2ecc(f1[i], e1[i])  # OK
+                M[i] = ecc2mean(E, e1[i])  # OK
 
             mm = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion
             M_min = -M_max - mm * year2sec(time_of_simulation)
