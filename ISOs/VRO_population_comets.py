@@ -33,7 +33,7 @@ vertex_deviation = [np.deg2rad(36), np.deg2rad(7), np.deg2rad(12)]  # vertex dev
 va = 0  # asymmetrical drift
 R_reff = 696340000.  # radius of the Sun
 
-for population in range(1):  # for 3 populations
+for population in range(2,3):  # for 3 populations
 
     sigma_vx = sigma[0][population]
     sigma_vy = sigma[1][population]
