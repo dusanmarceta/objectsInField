@@ -393,7 +393,7 @@ def absolute_magnitude_asteroid(D, albedo):
 
 def apparent_magnitude_asteroid(D, albedo, G, r_gc, r_hc, phase):
     # =============================================================================
-    # Calculates apparent magnitude (Jewit et al (2017), Bowell et al(1989))
+    # Calculates apparent magnitude (Jewit et al. (2017), Bowell et al(1989))
     # Input:
     # D (m) - diameter
     # albedo - geometrical albedo
@@ -478,6 +478,21 @@ def max_hc_distance_asteroid(D, albedo, V_cut):
     # output:
     # max heliocentric distance where the object can be observed
     # =============================================================================
+    """
+    Acording to Jewit et al. (2017), Bowell et al(1989)
+    V = H + 5 * np.log10(r_gc) + 5 * np.log10(r_hc) - phase_function
+    for ideal situation we can set:
+    phase_function = 0 (object in oposition)
+    r_gc= r_hc -1 (object in oposition)
+
+    Now we have
+    V = H + 5*log10(r_hc(r_hc-1))
+
+    for some critical V = V_cut we have
+    r_hc^2 - r_hc - C = 0, where C = 10 ** ((V_cut - H) / 5)
+    solvin quadratic equation wrt r_hc gives maximum heliocentric distance where the object can be observed
+    """
+
     H = absolute_magnitude_asteroid(D, albedo)
     C = 10 ** ((V_cut - H) / 5)
     return (1 + np.sqrt(1 + 4 * C)) / 2

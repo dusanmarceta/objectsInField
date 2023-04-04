@@ -10,6 +10,7 @@ oif/data/earth_070425_370426_predict.bpc
 oif/data/earth_latest_high_prec.bpc
 oif/data/earth_topo_050714.tf
 oif/data/latest_leapseconds.tls
+test/kraken_2026.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

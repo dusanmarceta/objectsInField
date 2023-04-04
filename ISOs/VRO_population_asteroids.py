@@ -13,12 +13,12 @@ time_of_simulation = 1  # years
 n0 = 0.1  # number-density (for D > 1 km)
 v_min = 1e3
 v_max = 1e5
-d = [50, 1000]
+d = [10, 1000]
 alpha = [[-2], [-2.5], [-3]]
 
 V_cut = 24.5
 
-albedo = 1
+albedo = 0.1
 
 u_Sun = 1e4
 v_Sun = 1.1e4
@@ -31,7 +31,7 @@ vertex_deviation = [np.deg2rad(36), np.deg2rad(7), np.deg2rad(12)]  # vertex dev
 va = 0  # asymmetrical drift
 R_reff = 696340000.  # radius of the Sun
 
-for population in range(1):  # for 3 populations
+for population in range(2,3):  # for 3 populations
 
     sigma_vx = sigma[0][population]
     sigma_vy = sigma[1][population]
@@ -63,8 +63,29 @@ for population in range(1):  # for 3 populations
         if os.path.exists(output_file):
             os.remove(output_file)
 
+
+        """
+        Maximum heliocentric distance where the largest object from the population can be observed
+        # The maximum diameter is set to 1 km
+        """
         hc_max = max_hc_distance_asteroid(max(d), albedo, V_cut)
 
+        """
+        Since the OIF simulation lasts some predefined time (1 year in our case), objects which are initially
+        further away from the Sun than hc_max may reach this heliocentric distance during the simulation time. 
+        This means we need to increase the model sphere a bit. This increment is how much the fastest object 
+        from the population can travel during that time, or 1 year * v_max 
+        
+        This gives the radius of our model sphere rm = hc_max + 1 year * v_max.
+        
+        Object inside this sphere might be at heliocentric distance where they are observable or
+        they might be further away but can reach the observable heliocentric distance during the simulation time.
+        Objects outside this are for sure not observable during the simulation time. 
+        
+        If we increase simulation time (e.g. to 10 years), then object which are initially very far away from the Sun
+        can maybe reach observable heliocentric distance during that time. This increases the model sphere, number of 
+        objects computational resources....
+        """
         rm = hc_max + year2sec(time_of_simulation) * v_max / au
 
         ISO_total_number = total_number(rm=rm, n0=n0, v_min=v_min, v_max=v_max,
@@ -72,7 +93,7 @@ for population in range(1):  # for 3 populations
                                         sigma_vx=sigma_vx, sigma_vy=sigma_vy, sigma_vz=sigma_vz,
                                         vd=vd, va=va, R_reff=R_reff,
                                         speed_resolution=100, angle_resolution=90, dr=0.1,
-                                        d_ref=1000, d=d, alpha=alpha)
+                                        d_ref=100, d=d, alpha=alpha)
 
         number_of_runs = 1
         if ISO_total_number > maximum_array_size:
@@ -95,17 +116,28 @@ for population in range(1):  # for 3 populations
                                                                  sigma_vz=sigma_vz,
                                                                  vd=vd, va=va, R_reff=R_reff,
                                                                  speed_resolution=100, angle_resolution=90, dr=0.1,
-                                                                 d_ref=1000, d=d, alpha=alpha)
+                                                                 d_ref=100, d=d, alpha=alpha)
             # =============================================================================
             # Filtering out objects which certainly cannot be detected because their perihelion distance is greater then the minimum helocentric distance
             # where they can be observed
             # =============================================================================
 
             hc_max1 = np.zeros(len(D))
+
+            '''
+            For every object (given its diameter and albedo=1) we calculate maximum heliocentric distance 
+            where the object can be observed
+            '''
             for i in range(len(D)):
                 hc_max1[i] = max_hc_distance_asteroid(D[i], albedo, V_cut)
 
+            """
+            SELECTION No. 1
+            We select only object whose perihelion distance is smaller than hc_max. If it is larger, that object cannot reach 
+            heliocentric distance where it can be observed
+            """
             selection = q < hc_max1
+
             e1 = e[selection]
             f1 = f[selection]
             inc1 = inc[selection]
@@ -115,22 +147,55 @@ for population in range(1):  # for 3 populations
             q1 = q[selection]
             hc_max2 = hc_max1[selection]
 
+            '''
+            SELECTION No. 1
+            Now we check if the object is inside observable time at initial moment
+            Equation of hyperbolic orbit:
+            r = a*(1-e*cosh(E)), where E is hyperbolic anomaly
+            
+            From this equation, given eccentricity, semi-major axis and maximum observable heliocentric distance
+            we can calculate critical hyperbolic anomaly (when ISO is exactly at hc_max) 
+            '''
             Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1)))  # OK
 
-            # corresponding critical mean anomaly
+            """
+            corresponding critical mean anomaly (maximum where an object of a given size can be observed)
+            from hyperbolic Kepler equation
+            M = e *sinh(E) - E
+            """
+
             M_max = e1 * np.sinh(Ecr) - Ecr  # OK
 
+            """
+            We calculate E and M for every object from the population
+            """
             M = np.zeros(len(q1))  # current mean anomaly
             for i in range(len(q1)):
                 E = true2ecc(f1[i], e1[i])  # OK
                 M[i] = ecc2mean(E, e1[i])  # OK
 
+            """
+            We calculate mean motion
+            """
             n = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion
+
+            """
+            Finally, we calculate minimum mean anomaly from which an object can reach hc_max during the simulation time
+            """
             M_min = -M_max - n * year2sec(time_of_simulation)
 
-            # Taking only those which are currently observable
-            # or a bit behind the observable zone but can reach it during
-            # simulation time
+
+            """
+            Final selection:
+            
+            If object is outside observable sphere and it is on outgoing branch or orbit (Mean anomaly > 0) it is excluded
+            because it is surely non observable. For objects with positive mean anomaly (those which are on the outgoing branch)
+            we take only those which are inside their observable spheres (which depands on D and albedo)
+            
+            
+            For objects on incoming branches we take those which are currently observable but also those whose mean anomaly 
+            is larger than M_min. This means that those object will reach their observable sphere during the OIF simualtion time. 
+            """
 
             selection = np.logical_and(M > M_min, M < M_max)
             e2 = e1[selection]
@@ -154,7 +219,7 @@ for population in range(1):  # for 3 populations
         file = open(output_file, 'ab')
         # first line
         np.savetxt(file, ['!!OID FORMAT q e i node argperi t_p H t_0 INDEX N_PAR MOID COMPCODE'], fmt='%s')
-
+        print(len(D_out))
         for i in range(len(q_out)):
             ISO_name = 'ISO_' + str(i)
             tp = mean2tp(ecc2mean(true2ecc(f_out[i], e_out[i]), e_out[i]), q_out[i] / (1 - e_out[i]), 59200.0)
