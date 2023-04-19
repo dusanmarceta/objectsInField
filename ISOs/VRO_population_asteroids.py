@@ -10,15 +10,17 @@ mu = 1.32712440042e20  # standard gravitational parameter of the Sun
 maximum_array_size = int(1e5)
 
 time_of_simulation = 1  # years
-n0 = 0.1  # number-density (for D > 1 km)
+n0 = 0.1  # number-density (for D > D_ref)
+d_reff = 100 # meters
 v_min = 1e3
 v_max = 1e5
 d = [10, 1000]
-alpha = [[-2], [-2.5], [-3]]
+# alpha = [[-2], [-2.5], [-3]]
+Alpha = [[-2]]
 
 V_cut = 24.5
 
-albedo = 0.1
+albedo=1
 
 u_Sun = 1e4
 v_Sun = 1.1e4
@@ -31,7 +33,7 @@ vertex_deviation = [np.deg2rad(36), np.deg2rad(7), np.deg2rad(12)]  # vertex dev
 va = 0  # asymmetrical drift
 R_reff = 696340000.  # radius of the Sun
 
-for population in range(2,3):  # for 3 populations
+for population in range(1):  # for 3 populations
 
     sigma_vx = sigma[0][population]
     sigma_vy = sigma[1][population]
@@ -47,9 +49,12 @@ for population in range(2,3):  # for 3 populations
     # =============================================================================
     #                               SIMULATION
     # =============================================================================
-    for alpha in alpha:  # SFD
+   
+    for alpha in Alpha:  # SFD
 
-        output_file = stars + '_' + str(min(d)) + '_' + str(max(d)) + '_' + str(alpha[0]) + '_asteroids.ssm'
+        output_file = stars + '_' + str(min(d)) + '_' + str(max(d)) + '_' + str(alpha[0]) + '_' + str(albedo) + '_asteroids.ssm'
+
+        output_file = 'staro.ssm'
 
         q_out = np.array([])
         e_out = np.array([])
@@ -68,7 +73,7 @@ for population in range(2,3):  # for 3 populations
         Maximum heliocentric distance where the largest object from the population can be observed
         # The maximum diameter is set to 1 km
         """
-        hc_max = max_hc_distance_asteroid(max(d), albedo, V_cut)
+        hc_max = max_hc_distance_asteroid(max(d), albedo, V_cut)  # This is OK
 
         """
         Since the OIF simulation lasts some predefined time (1 year in our case), objects which are initially
@@ -86,14 +91,14 @@ for population in range(2,3):  # for 3 populations
         can maybe reach observable heliocentric distance during that time. This increases the model sphere, number of 
         objects computational resources....
         """
-        rm = hc_max + year2sec(time_of_simulation) * v_max / au
+        rm = hc_max + year2sec(time_of_simulation) * v_max / au  # This is OK
 
         ISO_total_number = total_number(rm=rm, n0=n0, v_min=v_min, v_max=v_max,
                                         u_Sun=u_Sun, v_Sun=v_Sun, w_Sun=w_Sun,
                                         sigma_vx=sigma_vx, sigma_vy=sigma_vy, sigma_vz=sigma_vz,
                                         vd=vd, va=va, R_reff=R_reff,
                                         speed_resolution=100, angle_resolution=90, dr=0.1,
-                                        d_ref=100, d=d, alpha=alpha)
+                                        d_ref=d_reff, d=d, alpha=alpha) # This is OK
 
         number_of_runs = 1
         if ISO_total_number > maximum_array_size:
@@ -105,9 +110,9 @@ for population in range(2,3):  # for 3 populations
                 run + 1, number_of_runs,
                 alpha[0], population)], fmt='%s')
 
-            print('\n ------------------------------ \n Run number {} out of {} for SFD={}, population {}.'.format(
+            print('\n ------------------------------ \n Run number {} out of {} for albedo={},  SFD={}, population {}.'.format(
                 run + 1, number_of_runs,
-                alpha[0], population))
+                albedo, alpha[0], population))
 
             q, e, f, inc, Omega, omega, D = synthetic_population(rm=rm, n0=n0 / number_of_runs, v_min=v_min,
                                                                  v_max=v_max,
@@ -116,7 +121,7 @@ for population in range(2,3):  # for 3 populations
                                                                  sigma_vz=sigma_vz,
                                                                  vd=vd, va=va, R_reff=R_reff,
                                                                  speed_resolution=100, angle_resolution=90, dr=0.1,
-                                                                 d_ref=100, d=d, alpha=alpha)
+                                                                 d_ref=100, d=d, alpha=alpha) # This is OK
             # =============================================================================
             # Filtering out objects which certainly cannot be detected because their perihelion distance is greater then the minimum helocentric distance
             # where they can be observed
@@ -125,38 +130,38 @@ for population in range(2,3):  # for 3 populations
             hc_max1 = np.zeros(len(D))
 
             '''
-            For every object (given its diameter and albedo=1) we calculate maximum heliocentric distance 
+            For every object (given its diameter and albedo) we calculate maximum heliocentric distance 
             where the object can be observed
             '''
             for i in range(len(D)):
-                hc_max1[i] = max_hc_distance_asteroid(D[i], albedo, V_cut)
+                hc_max1[i] = max_hc_distance_asteroid(D[i], albedo, V_cut)  # This is OK
 
             """
             SELECTION No. 1
-            We select only object whose perihelion distance is smaller than hc_max. If it is larger, that object cannot reach 
+            We select only object whose perihelion distance is smaller than hc_max1. If it is larger, that object cannot reach 
             heliocentric distance where it can be observed
             """
-            selection = q < hc_max1
+            selection1 = q < hc_max1 # This is OK
 
-            e1 = e[selection]
-            f1 = f[selection]
-            inc1 = inc[selection]
-            Omega1 = Omega[selection]
-            omega1 = omega[selection]
-            D1 = D[selection]
-            q1 = q[selection]
-            hc_max2 = hc_max1[selection]
+            e1 = e[selection1]
+            f1 = f[selection1]
+            inc1 = inc[selection1]
+            Omega1 = Omega[selection1]
+            omega1 = omega[selection1]
+            D1 = D[selection1]
+            q1 = q[selection1]
+            hc_max2 = hc_max1[selection1]
 
             '''
-            SELECTION No. 1
+            SELECTION No. 2
             Now we check if the object is inside observable time at initial moment
             Equation of hyperbolic orbit:
             r = a*(1-e*cosh(E)), where E is hyperbolic anomaly
             
             From this equation, given eccentricity, semi-major axis and maximum observable heliocentric distance
-            we can calculate critical hyperbolic anomaly (when ISO is exactly at hc_max) 
+            we can calculate critical hyperbolic anomaly (when ISO is exactly at hc_max2) 
             '''
-            Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1)))  # OK
+            Ecr = np.arccosh(1 / e1 - hc_max2 / e1 / (q1 / (1 - e1)))  # This is OK
 
             """
             corresponding critical mean anomaly (maximum where an object of a given size can be observed)
@@ -164,25 +169,28 @@ for population in range(2,3):  # for 3 populations
             M = e *sinh(E) - E
             """
 
-            M_max = e1 * np.sinh(Ecr) - Ecr  # OK
+            M_max = e1 * np.sinh(Ecr) - Ecr  # This is OK
 
             """
             We calculate E and M for every object from the population
             """
+
+
+
             M = np.zeros(len(q1))  # current mean anomaly
             for i in range(len(q1)):
-                E = true2ecc(f1[i], e1[i])  # OK
-                M[i] = ecc2mean(E, e1[i])  # OK
+                E = true2ecc(f1[i], e1[i])  # This is OK
+                M[i] = ecc2mean(E, e1[i])  # This is OK
 
             """
             We calculate mean motion
             """
-            n = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion
+            n = np.sqrt(mu / (np.abs(q1 / (1 - e1)) * au) ** 3)  # mean motion (This is OK)
 
             """
             Finally, we calculate minimum mean anomaly from which an object can reach hc_max during the simulation time
             """
-            M_min = -M_max - n * year2sec(time_of_simulation)
+            M_min = -M_max - n * year2sec(time_of_simulation) # This is OK
 
 
             """
@@ -197,14 +205,14 @@ for population in range(2,3):  # for 3 populations
             is larger than M_min. This means that those object will reach their observable sphere during the OIF simualtion time. 
             """
 
-            selection = np.logical_and(M > M_min, M < M_max)
-            e2 = e1[selection]
-            f2 = f1[selection]
-            inc2 = inc1[selection]
-            Omega2 = Omega1[selection]
-            omega2 = omega1[selection]
-            D2 = D1[selection]
-            q2 = q1[selection]
+            selection2 = np.logical_and(M > M_min, M < M_max) # This is OK
+            e2 = e1[selection2]
+            f2 = f1[selection2]
+            inc2 = inc1[selection2]
+            Omega2 = Omega1[selection2]
+            omega2 = omega1[selection2]
+            D2 = D1[selection2]
+            q2 = q1[selection2]
 
             q_out = np.append(q_out, q2)
             e_out = np.append(e_out, e2)
@@ -219,10 +227,10 @@ for population in range(2,3):  # for 3 populations
         file = open(output_file, 'ab')
         # first line
         np.savetxt(file, ['!!OID FORMAT q e i node argperi t_p H t_0 INDEX N_PAR MOID COMPCODE'], fmt='%s')
-        print(len(D_out))
+        
         for i in range(len(q_out)):
             ISO_name = 'ISO_' + str(i)
-            tp = mean2tp(ecc2mean(true2ecc(f_out[i], e_out[i]), e_out[i]), q_out[i] / (1 - e_out[i]), 59200.0)
+            tp = mean2tp(ecc2mean(true2ecc(f_out[i], e_out[i]), e_out[i]), q_out[i] / (1 - e_out[i]), 59853.01679398148)
             H = absolute_magnitude_asteroid(D_out[i], albedo)
             iso_moid = moid(1.99330267, -0.1965350, 0, 0.01671022, 1., omega_out[i], Omega_out[i], inc_out[i], e_out[i],
                             q_out[i] / (1 - e_out[i]), np.deg2rad(1.))
@@ -232,7 +240,7 @@ for population in range(2,3):  # for 3 populations
                 [ISO_name, 'COM', np.round(q_out[i], 6), np.round(e_out[i], 6), np.round(np.rad2deg(inc_out[i]), 3),
                  np.round(np.rad2deg(Omega_out[i])), np.round(np.rad2deg(omega_out[i])), np.round(tp, 6),
                  np.round(H, 3),
-                 54466.0, 1, 6, np.round(iso_moid[0], 6), 'MOPS']),
+                 59853.0, 1, 6, np.round(iso_moid[0], 6), 'MOPS']),
                        fmt='%s')
 
         file.close()

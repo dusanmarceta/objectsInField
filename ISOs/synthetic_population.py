@@ -4,6 +4,7 @@ from scipy.integrate import simps, cumtrapz
 from scipy.stats import multivariate_normal
 import random
 
+
 # constants
 au=1.495978707e11 # astronomical unit
 mu=1.32712440042e20  # standard gravitational parameter of the Sun
@@ -30,12 +31,16 @@ def p_v_l_b(v,l,b, sigma_vx, mu_x, sigma_vy, mu_y, sigma_vz, mu_z, vd, va):
     return np.transpose(p_vx_vy_vz(vx, sigma_vx, mu_x, vy, sigma_vy, mu_y, vz, sigma_vz, mu_z, vd, va))*(vx**2+vy**2+vz**2)*np.cos(b)
 
 
-def number_density(n0, rm, d_ref=1000, d=[], alpha=[]):
+def number_density(n0, d_ref=1000, d=[], alpha=[]):
     # calculating total number density for all object with diameters between d[0] and d[-1]
     d=np.array(d)
     alpha=np.array(alpha)
     if len(d)>1:
-        ind=np.argwhere(d<=d_ref).flatten()[-1] # largest d smaller of equal than d_ref
+        try:
+            ind=np.argwhere(d<=d_ref).flatten()[-1] # largest d smaller of equal than d_ref
+        except:
+            ind=0
+
         if ind==len(alpha): # this only asures that for the last point (d[-1]), the parameters from the last interval are used
             ind-=1
 
@@ -110,9 +115,6 @@ def total_number(rm, n0, v_min, v_max,
     if speed_resolution*angle_resolution**2/2>maximum_array_size:
         raise Exception("Maximum number of points on v-l-b grid has been exceeded. Resolution for v and/or l and/or b must be reduced.")
 
-    # mesh for longitude and latitude of IS velocity vector
-    l_mesh, b_mesh = np.meshgrid(l_arr, b_arr)
-
     # making 3D arrays for v, l, b
     ind=np.mgrid[0:len(v_arr), 0:len(l_arr), 0:len(b_arr)]
     v=v_arr[ind[0]]
@@ -141,6 +143,7 @@ def total_number(rm, n0, v_min, v_max,
         new_sizes=[size]
 
     p_r=np.zeros(len(r_arr))
+
     for i in range(len(new_sizes)):
 
         # p6 marginal with respect to B and phi
@@ -152,18 +155,93 @@ def total_number(rm, n0, v_min, v_max,
                   (1+2*mu/r_arr[i*new_size+j]/v**2-
                    (R_reff/r_arr[i*new_size+j])**2*(1+2*mu/R_reff/v**2))**(1/2))/2
 
-        # marginal with repsect to all except r (Eq.18) 
+        # marginal with repsect to all except r (Eq.18)
+
         p_r[indices[i]:indices[i+1]]=simps(simps(simps(p_rvlb, b_arr), l_arr),v_arr)
 
-    n, n_total = number_density(n0, rm, d_ref, d, alpha)
+    n, n_total = number_density(n0, d_ref, d, alpha)
     # total number of object inside heliocentric sphere
     N_r=np.zeros(len(r_arr))
     N_r[1:]=cumtrapz(p_r*r_arr**2,r_arr)
     N_r=N_r*4*np.pi/au**3*n_total # Adjusting the total number of objects to the defined value of the interstellar number-density (Eq. 20)
+    return int(np.round(np.max(N_r))) # total number of objects in the population
 
-    return int(np.floor(np.max(N_r))) # total number of objects in the population
+
+def speed_distribution(v_min, v_max, u_Sun, v_Sun, w_Sun, sigma_vx, sigma_vy, sigma_vz, vd, va, speed_resolution_out=10, speed_resolution_in=100, angle_resolution=90):
+    '''
+    This function generates synthetic orbits and/or sizes of interstellar objects (ISO) in the solar system according to Marceta (2023, Astronomy and Computing, vol 42).
+    The input parameters define kinematics and number-density of ISOs in the interstellar space (unperturbed by the solar gravity). Beside this, the function also generates
+    sizes of ISOs according to the (broken) power law according to the input parameters.
+
+    Input:
+    rm: radius of the model sphere (au)
+    n0: number-density of the ISOs in the interstellar space (unperturbed by the Sun's gravity)
+        for objects with diameter >d0 (au^-1)
+    v_min: minimum allowed interstellar speed (m/s)
+    v_max: maximu allowed interstellar speed (m/s)
+    u_Sun:  u-component of the Sun's velocity w.r.t. LSR (m/s)
+    v_Sun: v-component of the Sun's velocity w.r.t. LSR (m/s)
+    w_Sun: w-component of the Sun's velocity w.r.t. LSR (m/s)
+    sigma_vx: standard deviation of x-component of ISOs' velocities w.r.t. LSR (m/s)
+    sigma_vy: standard deviation of y-component of ISOs' velocities w.r.t. LSR (m/s)
+    sigma_vz: standard deviation of z-component of ISOs' velocities w.r.t. LSR (m/s)
+    vd: vertex deviation (radians)
+    va:  assymetric drift (m/s)
+    R_reff:  refference radius of the Sun (m)
+    speed_resolution:  resolution of magnitudes of interstellar velocities (for numerical integration and inverse interpolation)
+    angle_resolution: resolution of galactic longitude (for numerical integration and inverse interpolation)
+    dr: increament step for heliocentric distance used for numerical integration and inverse interpolation (au)
+    d_ref:  reference ISO diameter for which n0 is defined (m)
+    d: array of diemetars for where power law for size frequency distribution (SFD) changes slope. This array also includes
+       minimum and maximum diameter od the population (m). If this array is empty (default) the function does not calculate sizes of the objects
+       and takes n0 as the total number-density
+    alpha: array of slopes of the SFD
 
 
+    Output (synthetic samples of orbital elements):
+    q_s - perihelion distance (au)
+    e_s - eccentricity
+    f_s - true anomaliy (radians)
+    inc_s - orbital inclination (radians])
+    node_s - longitude of ascending node (radians)
+    argument_s - argument of perihelion (radians)
+    D_s (optional) - diameters of ISOs (m)
+    '''
+    # setting maximum size of arrays in order to avoid memory problems
+    maximum_array_size = int(1e7)
+    v_arr = np.linspace(v_min, v_max, speed_resolution_in)
+    v_arr_out=np.linspace(v_min, v_max, speed_resolution_out)
+
+    indices=np.zeros(speed_resolution_out, dtype=int)
+    for i in range(len(indices)):
+        indices[i]=np.argmin(np.abs(v_arr-v_arr_out[i]))
+
+    l_arr = np.linspace(0, 2 * np.pi, angle_resolution)
+    b_arr = np.linspace(-np.pi / 2, np.pi / 2, int(angle_resolution / 2))
+
+    if speed_resolution_in * angle_resolution ** 2 / 2 > maximum_array_size:
+        raise Exception(
+            "Maximum number of points on v-l-b grid has been exceeded. Resolution for v and/or l and/or b must be reduced.")
+
+    # making 3D arrays for v, l, b
+    ind = np.mgrid[0:len(v_arr), 0:len(l_arr), 0:len(b_arr)]
+    v = v_arr[ind[0]]
+    l = l_arr[ind[1]]
+    b = b_arr[ind[2]]
+
+    # probability density distribution w.r.t. magnitude and direction of intrstellar velocities (at infinity), Eqs. 14 and 15
+    p_vlb = p_v_l_b(v, l, b, sigma_vx, -u_Sun, sigma_vy, -v_Sun, sigma_vz, -w_Sun, vd, va)
+
+    # marginal distribution of magnitudes of interstellar velocities
+    p_v = simps(simps(p_vlb, b_arr), l_arr)
+
+    p_v_cdf = cumtrapz(p_v, v_arr)
+    p_v_cdf = np.insert(p_v_cdf, 0, 0)
+
+    p_v_cdf_out=p_v_cdf[indices]
+
+
+    return (p_v, p_v_cdf_out, np.diff(p_v_cdf_out))
 
 
 def synthetic_population(rm, n0, v_min, v_max,
@@ -246,7 +324,7 @@ def synthetic_population(rm, n0, v_min, v_max,
     # probability density distribution w.r.t. magnitude and direction of intrstellar velocities (at infinity), Eqs. 14 and 15
     p_vlb=p_v_l_b(v, l, b, sigma_vx, -u_Sun, sigma_vy, -v_Sun, sigma_vz, -w_Sun, vd, va)
 
-    # marginal distribution of magnitudes interstellar velocities
+    # marginal distribution of magnitudes of interstellar velocities
     p_v=simps(simps(p_vlb, b_arr), l_arr)
 
     # If necessary, to avoid problems with memory the job is divided so that the larges array is smaller than the predefined value
@@ -282,13 +360,14 @@ def synthetic_population(rm, n0, v_min, v_max,
         # marginal with repsect to all except r (Eq.18)
         p_r[indices[i]:indices[i+1]]=simps(simps(simps(p_rvlb, b_arr), l_arr),v_arr)
 
-    n, n_total = number_density(n0, rm, d_ref, d, alpha)
+    n, n_total = number_density(n0, d_ref, d, alpha)
+
     # total number of object inside heliocentric sphere
     N_r=np.zeros(len(r_arr))
     N_r[1:]=cumtrapz(p_r*r_arr**2,r_arr)
     N_r=N_r*4*np.pi/au**3*n_total # Adjusting the total number of objects to the defined value of the interstellar number-density (Eq. 20)
 
-    total_number=int(np.floor(np.max(N_r))) # total number of objects in the population
+    total_number=int(np.round(np.max(N_r))) # total number of objects in the population
 
 
     if total_number > maximum_array_size:
@@ -319,7 +398,7 @@ def synthetic_population(rm, n0, v_min, v_max,
         rs = interpolate.splev(ur, tck, der=0) # the set of helicentric distances (Eq. 21)
 
 # =============================================================================
-# Determining intestalar velocity
+# Determining intestallar velocity
 # =============================================================================
 
         # division of arrays if necessary
@@ -554,11 +633,13 @@ def synthetic_population(rm, n0, v_min, v_max,
         # true anomaly
         f_s=sign*np.arccos((semi_major_axis_s*(1-e_s**2)/rs-1)/e_s)
 
+    if total_number>0:
+        if len(d)>1:
+            D_s=ISO_diameters(n, d, alpha, total_number)
+            return(q_s/au, e_s, f_s, inc_s, node_s, argument_s, D_s)
+        else:
+            return(q_s/au, e_s, f_s, inc_s, node_s, argument_s)
 
-
-    if len(d)>1:
-        D_s=ISO_diameters(n, d, alpha, total_number)
-        return(q_s/au, e_s, f_s, inc_s, node_s, argument_s, D_s)
     else:
-        return(q_s/au, e_s, f_s, inc_s, node_s, argument_s)
+        return([], [], [], [], [], [], [])
 
