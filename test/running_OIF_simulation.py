@@ -6,7 +6,8 @@ import time
 
 
 
-alpha = np.arange(1.5, 4.75, 0.25)
+alpha = np.array(['-1.0', '-1.5', '-2.0', '-2.5', '-3.0', '-3.5', '-4.0'])
+
 
 Alpha = []
 for i in range(len(alpha)):
@@ -22,9 +23,13 @@ for population in range(3):  # for 3 populations
         stars = 'G'
 
     for alpha in Alpha:  # SFD
+        
+        print('Population {}, alpha = {}'.format(stars, alpha))
+        np.savetxt('progress_OIF.txt', ['Population {}, alpha = {}'.format(stars, alpha)], fmt='%s')
 
-        input_file = stars + '_' + str(alpha[0]) + '.ssm'
-        output_file = stars + '_' + str(alpha[0]) + '_OIF.txt'
+        
+        input_file = stars + '_' + alpha[0] + '.ssm'
+        output_file = stars + '_' + alpha[0] + '_OIF.txt'
 
         # # Generatong configure file for OIF
         q=np.loadtxt(input_file, usecols=2, skiprows=1)
