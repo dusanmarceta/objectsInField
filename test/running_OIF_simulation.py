@@ -28,8 +28,8 @@ for population in range(3):  # for 3 populations
         np.savetxt('progress_OIF.txt', ['Population {}, alpha = {}'.format(stars, alpha)], fmt='%s')
 
         
-        input_file = stars + '_' + alpha[0] + '.ssm'
-        output_file = stars + '_' + alpha[0] + '_OIF.txt'
+        input_file = stars + '_' + alpha[0] + '_ecl.ssm'
+        output_file = stars + '_' + alpha[0] + '_ecl_OIF.txt'
 
         # # Generatong configure file for OIF
         q=np.loadtxt(input_file, usecols=2, skiprows=1)

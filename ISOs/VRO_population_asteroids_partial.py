@@ -25,7 +25,7 @@ u_Sun = 1e4
 v_Sun = 1.1e4
 w_Sun = 7e3
 
-sigma = [[1.2e4, 3.1e4, 2.6e4], [1.2e4, 2.3e4, 1.8e4],
+sigma = [[1.2e4, 3.1e4, 2.6e4], [1.1e4, 2.3e4, 1.8e4],
          [0.9e4, 1.6e4, 1.5e4]]  # velocity dispersions for 3 stellar populations
 
 vertex_deviation = [np.deg2rad(36), np.deg2rad(7), np.deg2rad(12)]  # vertex deviation for 3 stellar populations
